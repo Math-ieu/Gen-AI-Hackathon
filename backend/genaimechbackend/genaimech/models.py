@@ -2,7 +2,7 @@ from djongo import models
 
 
 class User(models.Model):
-    _id = models.ObjectIdField()
+    _id = models.ObjectIdField() 
     name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=100)
     email = models.EmailField(max_length=100)
@@ -15,3 +15,4 @@ class User(models.Model):
 
     def __str__(self):
         return self.name
+

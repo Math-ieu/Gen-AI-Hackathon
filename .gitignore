@@ -22,3 +22,6 @@ vector_store
 
 gen-ai-mech-hackthon-video.mp4
 oneAPI-Genaimech-Healthcare.pptx
+
+# Ignore all files in the data directory
+venv/

@@ -2,7 +2,7 @@ from ..llm.storage_creation import DocStore
 from ..llm.utils import *
 import json
 
-
+ 
 def generate_prescription(disease):
     print('Generating prescription')
     A = DocStore()
