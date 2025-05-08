@@ -1,18 +1,20 @@
-from djongo import models
+from mongoengine import Document, StringField, EmailField, DateTimeField
+from datetime import datetime
 
+class User(Document): 
+    name = StringField(max_length=100, required=True)
+    phone_number = StringField(max_length=100, required=True)
+    email = EmailField(max_length=100, required=True, unique=True)
+    created_at = DateTimeField(default=datetime.utcnow)
+    updated_at = DateTimeField(default=datetime.utcnow)
+    reset_token = StringField(max_length=100, default="")
+    reset_token_expires = DateTimeField(null=True)
+    hashed_password = StringField(max_length=100, required=True)
+    salt = StringField(max_length=100, required=True)
 
-class User(models.Model):
-    _id = models.ObjectIdField() 
-    name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=100)
-    email = models.EmailField(max_length=100)
-    created_at = models.DateTimeField(auto_now_add=True)
-    reset_token = models.CharField(max_length=100, default="")
-    reset_token_expires = models.DateTimeField("")
-    updated_at = models.DateTimeField(auto_now=True)
-    hashed_password = models.CharField(max_length=100)
-    salt = models.CharField(max_length=100)
+    def save(self, *args, **kwargs):
+        self.updated_at = datetime.utcnow()
+        return super(User, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name
-

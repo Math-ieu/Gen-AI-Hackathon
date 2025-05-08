@@ -1,5 +1,5 @@
 from peft import PeftModel
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import yaml
 from sentence_transformers import SentenceTransformer
@@ -7,14 +7,11 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core import Settings
 from llama_index.llms.huggingface import HuggingFaceLLM
 from llama_index.core import PromptTemplate
-from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig, TrainingArguments
-
 
 def load_config(CONFIG_PATH):
     with open(CONFIG_PATH, 'r') as f:
         config = yaml.safe_load(f)
     return config
-
 
 def generate_prompt_medical(question, context, answer=None):
     """Generates a prompt from the given question, context, and answer."""
@@ -22,7 +19,6 @@ def generate_prompt_medical(question, context, answer=None):
         return f"question: {question} context: {context} answer: {answer} </s>"
     else:
         return f"question: {question} context: {context} </s>"
-
 
 Settings.embed_model = HuggingFaceEmbedding(
     model_name="BAAI/bge-small-en-v1.5")
@@ -33,60 +29,59 @@ query_wrapper_prompt = PromptTemplate(
     "### Instruction:\n{query_str}\n\n### Response:"
 )
 
-bnb_config = GPTQConfig(bits=4, disable_exllama=True)
-x = "Intel/Mistral-7B-v0.1-int4-inc"
-tokenizer = AutoTokenizer.from_pretrained(x)
-tokenizer.pad_token = tokenizer.eos_token
+# Global variables for lazy loading
+_model = None
+_tokenizer = None
+_eval_tokenizer = None
 
-model = AutoModelForCausalLM.from_pretrained(x,
-                                             quantization_config=bnb_config,
-                                             device_map="auto",
-                                             use_cache=False,
-                                             )
+def load_models():
+    global _model, _tokenizer, _eval_tokenizer
+    if _model is None:
+        # Load tokenizer for the model
+        x = "distilgpt2"
+        _tokenizer = AutoTokenizer.from_pretrained(x)
+        _tokenizer.pad_token = _tokenizer.eos_token
 
+        # Load model (non-quantized, CPU, float16)
+        _model = AutoModelForCausalLM.from_pretrained(
+            x,
+            device_map="cpu",
+            torch_dtype=torch.float16,  # Use float16 to reduce memory
+            use_cache=False
+        )
 
-llm = HuggingFaceLLM(
-    context_window=2048,
-    max_new_tokens=256,
-    # quantization_config=gptq_config,
-    generate_kwargs={"temperature": 0.25, "do_sample": False},
-    query_wrapper_prompt=query_wrapper_prompt,
-    tokenizer=tokenizer,
-    #    model_name="Intel/neural-chat-7b-v3-1-int4-inc",
-    model=model,
-    device_map="auto",
-    tokenizer_kwargs={"max_length": 2048},
-    # uncomment this if using CUDA to reduce memory usage
-    # model_kwargs={"torch_dtype": torch.float16}
-)
+        # Load tokenizer for the base model (same as main tokenizer)
+        _eval_tokenizer = AutoTokenizer.from_pretrained(
+            x,
+            add_bos_token=True,
+            trust_remote_code=True
+        )
 
+    return _model, _model, _tokenizer, _eval_tokenizer  # Reuse _model for _base_model
+
+# Initialize LLM with lazy-loaded model and tokenizer
+def get_llm():
+    model, _, tokenizer, _ = load_models()
+    return HuggingFaceLLM(
+        context_window=2048,
+        max_new_tokens=256,
+        generate_kwargs={"temperature": 0.25, "do_sample": False},
+        query_wrapper_prompt=query_wrapper_prompt,
+        tokenizer=tokenizer,
+        model=model,
+        device_map="cpu",
+        tokenizer_kwargs={"max_length": 2048}
+    )
+
+# Initialize fine-tuned model with lazy-loaded base model
+def get_ft_model():
+    base_model, _, _, eval_tokenizer = load_models()
+    # Note: Checkpoint may not be compatible; using base model for now
+    return base_model, eval_tokenizer
+
+# Set global settings
 Settings.chunk_size = 512
-Settings.llm = llm
-
-
-base_model_id = "mistralai/Mistral-7B-v0.1"
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16
-)
-
-base_model = AutoModelForCausalLM.from_pretrained(
-    base_model_id,  # Mistral, same as before
-    quantization_config=bnb_config,  # Same quantization config as before
-    device_map="auto",
-    trust_remote_code=True,
-)
-
-eval_tokenizer = AutoTokenizer.from_pretrained(
-    base_model_id,
-    add_bos_token=True,
-    trust_remote_code=True,
-)
-
-ft_model = PeftModel.from_pretrained(base_model, "results/checkpoint-144")
-
+Settings.llm = get_llm()
 #
 #
 #

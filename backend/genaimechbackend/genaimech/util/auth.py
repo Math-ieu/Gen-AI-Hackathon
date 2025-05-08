@@ -10,7 +10,7 @@ from django.utils import timezone
 import environ
 env = environ.Env()
 environ.Env.read_env()
-
+ 
 
 def encrypt_password(password, salt):
     return hashlib.sha256(salt.encode() + password.encode()).hexdigest()
@@ -58,8 +58,8 @@ def user_signin(data):
     if hashed_password != user.hashed_password:
         return Response({'status': 400, 'message': 'Invalid password!'}, status=400)
 
-    SECRET_KEY = env('SECRET_KEY')
-    _id = user._id
+    SECRET_KEY = 'django-insecure-_4vbo^umto%pzw7#)ovhqv$svi0%%n5-kaq_vf&-(8#8g6gf#j'
+    _id = user.id
     login_token = generate_login_token(
         email, SECRET_KEY, _id)
 

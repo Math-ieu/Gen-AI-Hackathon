@@ -8,7 +8,7 @@ from llama_index.core.ingestion import IngestionPipeline
 import chromadb
 from llama_index.core.node_parser import SentenceSplitter
 import requests
-from pathlib import Path
+from pathlib import Path 
 from llama_index.readers.file import PDFReader
 from typing import Any, Callable, List, Sequence
 from typing import Union

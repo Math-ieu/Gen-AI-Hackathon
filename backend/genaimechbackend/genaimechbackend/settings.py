@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from mongoengine import connect
+
+
 
 import environ
 env = environ.Env()
@@ -28,7 +31,7 @@ SECRET_KEY = 'django-insecure-_4vbo^umto%pzw7#)ovhqv$svi0%%n5-kaq_vf&-(8#8g6gf#j
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+ 
 ALLOWED_HOSTS = []
 
 
@@ -87,24 +90,17 @@ WSGI_APPLICATION = 'genaimechbackend.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+
+
 # connect to mongodb database
-HOST = env('HOST')
-DB_USERNAME = env('DB_USERNAME')
-PASSWORD = env('PASSWORD')
-PROJECT_NAME = env('PROJECT_NAME')
-DATABASES = {
-    'default': {
-        'ENGINE': 'djongo',
-        'NAME': PROJECT_NAME,
-        'CLIENT': {
-            'host': HOST,
-            'username': DB_USERNAME,
-            'password': PASSWORD,
-        }
-    }
-}
 
 
+
+connect(
+    db='mydb',
+    host='localhost',
+    port=27017
+)
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 

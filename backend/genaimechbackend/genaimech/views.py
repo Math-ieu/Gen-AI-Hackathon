@@ -7,7 +7,7 @@ from .utils import get_response, post_response, post_chat, get_all_chat, new__ch
 
 from .util.auth import insert_signup, user_signin
 
-
+ 
 @api_view(['GET'])
 def getRoutes(request):
     routes = [
@@ -99,3 +99,4 @@ def signin(request):
 def getPrescription(request):
     diseases = request.data['diseases']
     return get_prescription(diseases)
+ 
